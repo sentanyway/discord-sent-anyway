@@ -3,8 +3,7 @@
 //
 // read-only. it never writes to discord's folders, never opens your token,
 // cookies, local storage or cached messages. it reads:
-//   - app.asar / core.asar (discord's own app code)
-//   - discord_utils.node (native module, strings only)
+//   - core.asar (discord's own app code)
 //   - discord's own web-app javascript from its http cache (only /assets/*.js entries)
 //   - sentry/scope_v3.json (key names only, values are never printed)
 //
@@ -164,6 +163,22 @@ const results = [];
 function result(id, ok, line) { results.push({ id, ok, line }); console.log((ok ? G('  ✓ ') : R('  ✗ ')) + line + '\n'); }
 
 const checks = {
+  launch_game: {
+    title: 'every game you open gets reported. exe path, fingerprint, your servers, your voice channel. activity status off just becomes a field.',
+    run(ctx) {
+      const h = searchAll(ctx.web, /\.LAUNCH_GAME,\{/g, 1)[0];
+      if (!h) return result('launch_game', false, 'LAUNCH_GAME call not found in cached js');
+      const body = h.text.slice(h.idx, h.text.indexOf('})', h.idx) + 2);
+      const fields = [...body.matchAll(/[{,]([a-z_]+):/g)].map(m => m[1]);
+      show(h.name, h.text, h.idx, ['executable_path', 'executable_fingerprint', 'activity_status_enabled', 'activity_status_shared_guilds', 'voice_channel_id', 'voice_channel_guild_id'], 40, body.length + 40);
+      console.log(`  fields: ${fields.join(', ')}`);
+      const t = searchAll(ctx.web, /sharedGuildIds:[a-zA-Z$]+,voiceChannelId/g, 1)[0];
+      if (t) { console.log('  fires 10s (1e4 ms) after a game is detected:'); show(t.name, t.text, t.idx, ['1e4']); }
+      const need = ['executable_path', 'activity_status_enabled', 'activity_status_shared_guilds', 'voice_channel_id'];
+      result('launch_game', need.every(f => fields.includes(f)), `launch_game carries ${need.join(', ')}`);
+    },
+  },
+
   consent: {
     title: 'i turned off "use data to improve discord". the app never checks it before sending analytics.',
     run(ctx) {
@@ -192,59 +207,12 @@ const checks = {
     },
   },
 
-  launch_game: {
-    title: 'every game you open gets reported. exe path, fingerprint, your servers, your voice channel. activity status off just becomes a field.',
+  dm_list: {
+    title: 'on launch it sends the user ids of everyone visible in your dm list.',
     run(ctx) {
-      const h = searchAll(ctx.web, /\.LAUNCH_GAME,\{/g, 1)[0];
-      if (!h) return result('launch_game', false, 'LAUNCH_GAME call not found in cached js');
-      const body = h.text.slice(h.idx, h.text.indexOf('})', h.idx) + 2);
-      const fields = [...body.matchAll(/[{,]([a-z_]+):/g)].map(m => m[1]);
-      show(h.name, h.text, h.idx, ['executable_path', 'executable_fingerprint', 'activity_status_enabled', 'activity_status_shared_guilds', 'voice_channel_id', 'voice_channel_guild_id'], 40, body.length + 40);
-      console.log(`  fields: ${fields.join(', ')}`);
-      const t = searchAll(ctx.web, /sharedGuildIds:[a-zA-Z$]+,voiceChannelId/g, 1)[0];
-      if (t) { console.log('  fires 10s (1e4 ms) after a game is detected:'); show(t.name, t.text, t.idx, ['1e4']); }
-      const need = ['executable_path', 'activity_status_enabled', 'activity_status_shared_guilds', 'voice_channel_id'];
-      result('launch_game', need.every(f => fields.includes(f)), `launch_game carries ${need.join(', ')}`);
-    },
-  },
-
-  idle: {
-    title: 'it checks how long your whole mac has been idle. every 10 seconds. and when you lock or sleep it.',
-    run(ctx) {
-      const h = searchAll(ctx.web, /powerMonitor\?\.getSystemIdleTimeMs!=null/g, 1)[0];
-      if (h) show(h.name, h.text, h.idx, ['getSystemIdleTimeMs', '10*', '"lock-screen"', '"suspend"', '"unlock-screen"', '"resume"'], 260, 520);
-      const c = searchAll(ctx.core, /getSystemIdleTime\(\)/g, 1)[0];
-      if (c) show(`core.asar:${c.name}`, c.text, c.idx, ['getSystemIdleTime', 'powerMonitor']);
-      result('idle', !!h, h ? 'system idle poll every 10s + lock/sleep listeners' : 'idle poll not found');
-    },
-  },
-
-  super_properties: {
-    title: 'every api request says your os, version, cpu arch, language, and whether you run betterdiscord/vencord.',
-    run(ctx) {
-      const h = searchAll(ctx.web, /system_locale:[a-zA-Z$]+,has_client_mods:/g, 1)[0];
-      if (h) show(h.name, h.text, h.idx, ['os_version', 'os_arch', 'system_locale', 'has_client_mods', 'client_launch_id'], 220, 200);
-      const m = searchAll(ctx.web, /window\.BetterDiscord|BetterDiscord/g, 1)[0];
-      if (m) { console.log('  the client-mod check:'); show(m.name, m.text, m.idx, ['BetterDiscord', 'Vencord'], 120, 240); }
-      result('super_properties', !!h, h ? 'X-Super-Properties includes has_client_mods + system_locale' : 'not found');
-    },
-  },
-
-  heartbeat: {
-    title: 'every 15 min: memory, current game, idle, afk, screen locked, sleeping.',
-    run(ctx) {
-      const h = searchAll(ctx.web, /is_system_locked:[^}]{0,60}\}\)\};[a-zA-Z$.]+\.track\([a-zA-Z$.]+CLIENT_HEARTBEAT/g, 1)[0];
-      if (h) show(h.name, h.text, h.idx, ['is_system_locked', 'CLIENT_HEARTBEAT', 'foregrounded', 'rtc_connected'], 700, 400);
-      result('heartbeat', !!h, h ? 'client_heartbeat (runs while focused or in a call)' : 'not found');
-    },
-  },
-
-  beaker: {
-    title: 'a second analytics endpoint: /beaker. hourly. even in the background.',
-    run(ctx) {
-      const h = searchAll(ctx.web, /CLIENT_TELEMETRY[:=]"\/beaker"/g, 1)[0];
-      if (h) show(h.name, h.text, h.idx, ['CLIENT_TELEMETRY', '/beaker'], 60, 120);
-      result('beaker', !!h, h ? 'client_telemetry → /api/v9/beaker' : 'not found');
+      const h = searchAll(ctx.web, /DM_LIST_VIEWED,\{[^}]{0,120}visible_user_ids/g, 1)[0];
+      if (h) show(h.name, h.text, h.idx, ['getRecipientId', 'DM_LIST_VIEWED', 'visible_user_ids'], 420, 220);
+      result('dm_list', !!h, h ? 'dm_list_viewed carries visible_user_ids (the people in your dm list)' : 'not found');
     },
   },
 
@@ -275,39 +243,6 @@ const checks = {
       result('sentry', !!dsn && !!rate, 'main-process sentry, sample rate 1 on mac, env-var-only opt-out');
     },
   },
-
-  dns_beacon: {
-    title: 'on launch it stuffs your system language into a dns name under dc-telemetry.net. no setting.',
-    run(ctx) {
-      const h = searchAll(ctx.app, /class DnsReporter\{/g, 1)[0];
-      if (h) show(`app.asar:${h.name}`, h.text, h.idx, ['DnsReporter', 'dc-telemetry.net', 'clientLocale', '"loc"', '"idt"'], 60, 1100);
-      const r = searchAll(ctx.app, /new connectivityTester\.DnsReporter\("dc-telemetry\.net",locale\)/g, 1)[0];
-      if (r) show(`app.asar:${r.name}`, r.text, r.idx, ['DnsReporter', 'locale'], 120, 200);
-      result('dns_beacon', !!h, h ? 'DnsReporter → *.v1.dc-telemetry.net, locale in the hostname' : 'not found');
-    },
-  },
-
-  warp: {
-    title: 'inferred: a cloudflare warp installer sits in the native module. admin prompt. nothing calls it that we could find.',
-    run(ctx) {
-      if (!ctx.utils) return result('warp', false, 'discord_utils.node not found');
-      const buf = fs.readFileSync(ctx.utils);
-      const s = buf.toString('latin1');
-      const i = s.indexOf('1111-releases.cloudflareclient.com');
-      const n = s.indexOf('installWarp');
-      if (i >= 0) show('discord_utils.node', s, i, ['cloudflareclient.com', '/usr/sbin/installer', 'warp'], 200, 260);
-      result('warp', i >= 0 && n >= 0, i >= 0 ? 'installWarp + warp.pkg download/install string present (strings only, dormant as far as we can tell)' : 'not present in this build');
-    },
-  },
-
-  sandbox: {
-    title: 'the main window runs with sandbox off.',
-    run(ctx) {
-      const h = searchAll(ctx.core, /sandbox:!1,preload:path_1\.default\.join\(__dirname,"mainScreenPreload\.js"\)/g, 1)[0];
-      if (h) show(`core.asar:${h.name}`, h.text, h.idx, ['sandbox:!1', 'contextIsolation:!0'], 120, 220);
-      result('sandbox', !!h, h ? 'main window: sandbox:false (contextIsolation is on)' : 'not found');
-    },
-  },
 };
 
 // ---------- main ----------
@@ -317,25 +252,17 @@ if (args.includes('--list')) { for (const [k, c] of Object.entries(checks)) cons
 const dd = dataDir();
 if (!dd) { console.error('discord data folder not found. is discord installed and opened at least once?'); process.exit(1); }
 const appDir = newestAppDir(dd);
-const appAsar = [
-  appDir && findFile(appDir, 'app.asar'),
-  '/Applications/Discord.app/Contents/Resources/app.asar',
-  '/usr/share/discord/resources/app.asar', '/opt/discord/resources/app.asar',
-].find(p => p && fs.existsSync(p));
 const coreAsar = findFile(appDir, 'core.asar') || findFile(path.join(dd, 'modules'), 'core.asar') || findFile(dd, 'core.asar', 4);
-const utils = findFile(appDir, process.platform === 'win32' ? 'discord_utils.node' : 'discord_utils.node') || findFile(dd, 'discord_utils.node', 5);
 
 console.log(B('sent anyway — checking your own discord install (read-only)\n'));
-for (const [label, p] of [['app.asar', appAsar], ['core.asar', coreAsar], ['discord_utils.node', utils]]) {
+for (const [label, p] of [['core.asar', coreAsar]]) {
   if (!p) { console.log(`  ${label}: not found`); continue; }
   const h = sha256(fs.readFileSync(p)); sources.set(label, { path: tilde(p), sha256: h });
   console.log(`  ${label.padEnd(19)} ${tilde(p)}\n  ${''.padEnd(19)} sha256 ${h}`);
 }
 const ctx = {
   dd,
-  app: appAsar ? readAsar(appAsar) : new Map(),
   core: coreAsar ? readAsar(coreAsar) : new Map(),
-  utils,
   web: webJs(dd),
 };
 const build = (() => { for (const t of ctx.web.values()) { const m = t.match(/buildNumber:"?(\d{6})"?/) || t.match(/"buildNumber","(\d{6})"/); if (m) return m[1]; } return '?'; })();
