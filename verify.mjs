@@ -207,14 +207,6 @@ const checks = {
     },
   },
 
-  dm_list: {
-    title: 'on launch it sends the user ids of everyone visible in your dm list.',
-    run(ctx) {
-      const h = searchAll(ctx.web, /DM_LIST_VIEWED,\{[^}]{0,120}visible_user_ids/g, 1)[0];
-      if (h) show(h.name, h.text, h.idx, ['getRecipientId', 'DM_LIST_VIEWED', 'visible_user_ids'], 420, 220);
-      result('dm_list', !!h, h ? 'dm_list_viewed carries visible_user_ids (the people in your dm list)' : 'not found');
-    },
-  },
 
   sentry: {
     title: 'crash reports go to sentry.io with your email, id and username. no opt-out. mac = 100% of crashes.',

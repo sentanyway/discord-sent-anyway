@@ -49,13 +49,6 @@ i turned off "use data to improve discord". the app never checks it before sendi
   NNECTION_CLOSED:()=>i.AnalyticsActionHandlers.handleConnectionClosed(),FINGERPRINT:()=>i.AnalyticsActionHandlers.handleFingerprint(),>>TRACK<<:e=>i.AnalyticsActionHandlers.>>handleTrack<<(e),SET_ANALYTICS_TOKEN:e=>i.AnalyticsActionHandlers.handleSetAnalyticsToken(e)},>>>>TRACK<<ING_URL<<:c.Rsh.>>TRACK<<,waitFor:[d.default],getFingerprint:d.default.getFingerprint,getSessionId:()=>(0,l.Ht)().then(e=>({sessionId:e?.uuid})),getLaunchSignature:()=>o.launchSignature,scheduleWhenIdle:r.O,sendUnloadRequest:s.L})},384200(e,t,n){"use strict";n.
   ✓ 23 references, 0 outside settings/enum. the send path never reads it.
 
-## dm_list
-on launch it sends the user ids of everyone visible in your dm list.
-
-  web.3a122a9dc6c39305.js @780902
-  s.props;if(0===t.length)return;let i=r.Children.count(this.props.children);if(null==e)return;let a=Math.round((e.offsetHeight-44*i)/44),s=a>t.length?t.slice(0,a+1):t,l=s.map(e=>null!=n[e]?n[e].>>getRecipientId<<():null),o=t.some(e=>(0,N.A)(e)),d={num_users_visible:s.length,num_users_visible_with_mobile_indicator:l.filter(e=>null!=e&&K.A.isMobileOnline(e)).length};this.hasReportedAnalytics=!0,m.Ay.trackWithMetadata(X.HAw.>>DM_LIST_VIEWED<<,{...d,...(0,S.F)(),>>visible_user_ids<<:l.filter(e=>null!=e),changelog_dm_visible:o})};getSectionHeight=e=>24*(0!==e);handleScroll=o()(()=>{if(null!=this._list){let e=this._list.getScrollerNode();null!=e&&I.A.
-  ✓ dm_list_viewed carries visible_user_ids (the people in your dm list)
-
 ## sentry
 crash reports go to sentry.io with your email, id and username. no opt-out. mac = 100% of crashes.
 
@@ -75,7 +68,6 @@ crash reports go to sentry.io with your email, id and username. no opt-out. mac 
 summary
   ✓ launch_game        launch_game carries executable_path, activity_status_enabled, activity_status_shared_guilds, voice_channel_id
   ✓ consent            23 references, 0 outside settings/enum. the send path never reads it.
-  ✓ dm_list            dm_list_viewed carries visible_user_ids (the people in your dm list)
   ✓ sentry             main-process sentry, sample rate 1 on mac, env-var-only opt-out
 
 ✗ usually means discord shipped a new build and the pattern moved. open an issue with your build number.
