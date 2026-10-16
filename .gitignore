@@ -1,0 +1,4 @@
+receipts/
+*.netlog.json
+discord-netlog.json
+.DS_Store

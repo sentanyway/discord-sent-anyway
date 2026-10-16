@@ -1,0 +1,140 @@
+sent anyway — checking your own discord install (read-only)
+
+  app.asar            ~/Library/Application Support/discord/app-0.0.416/Discord.app/Contents/Resources/app.asar
+                      sha256 94ddb271db012dbaf4801dba9782a98c6bac9398f1b970bb6ce1f703ac2dc245
+  core.asar           ~/Library/Application Support/discord/app-0.0.416/modules/discord_desktop_core-1/discord_desktop_core/core.asar
+                      sha256 27aacaa590e9511bf3c70f545fe735a7a695612a88b1c3a78739779ff2ceab47
+  discord_utils.node  ~/Library/Application Support/discord/app-0.0.416/modules/discord_utils-1/discord_utils/discord_utils.node
+                      sha256 b9680d0cf0a7a0d15b63f23242826b197b80264846f584f7d9687ca44dfbbcdf
+  web app js          7798 files from discord's http cache (web build 638651)
+
+## consent
+i turned off "use data to improve discord". the app never checks it before sending analytics.
+
+  every place the web app mentions USAGE_STATISTICS (23):
+   - 703d09f8da6405fe.js @490647: settings screen
+   - 703d09f8da6405fe.js @490890: settings screen
+   - 703d09f8da6405fe.js @490949: settings screen
+   - 703d09f8da6405fe.js @491168: settings screen
+   - web.3a122a9dc6c39305.js @525304: enum definition
+   - web.3a122a9dc6c39305.js @8320306: settings screen
+   - b29e0de9971154a5.js @489811: settings screen
+   - b29e0de9971154a5.js @490054: settings screen
+   - b29e0de9971154a5.js @490113: settings screen
+   - b29e0de9971154a5.js @490332: settings screen
+   - 524c16df85b404c4.js @493947: settings screen
+   - 524c16df85b404c4.js @494190: settings screen
+   - 524c16df85b404c4.js @494249: settings screen
+   - 524c16df85b404c4.js @494468: settings screen
+   - 5d902defece4955d.js @489012: settings screen
+   - 5d902defece4955d.js @489255: settings screen
+   - 5d902defece4955d.js @489314: settings screen
+   - 5d902defece4955d.js @489533: settings screen
+   - web.843cc7edc28c426c.js @517336: enum definition
+   - web.843cc7edc28c426c.js @8241276: settings screen
+   - 31d94f1ddfdfffa2.js @25365: settings screen
+   - 2b6d200e0f574c3a.js @25366: settings screen
+   - e17ebe978fc07122.js @25366: settings screen
+  703d09f8da6405fe.js @490647
+  .Ay],()=>iK.Ay.getGamesSeen(!1).some(e=>!(0,Aw.n1)(e)))&&(0,nd.xl)()}),_m=(0,a.gN)(o.X.DATA_USAGE_RELATED_SETTINGS,{buildLayout:()=>[_g]}),_A=(0,a.zD)(o.X.DATA_>>USAGE_STATISTICS<<_SETTING,{useTitle:()=>j.intl.string(j.t.XuADY2),useSubtitle:()=>j.intl.format(j.t.FNqmmX,{helpdeskArticle:eS.A.getArticleURL(A.MVz.DATA_PRIVACY_CONTROLS)}),useValue:function(){return(0,m.bG)([IW.A],()=>IW.A.>>hasConsented<<(A.YAq.>>USAGE_STATISTICS<<))},setValue:function(e){e?(0,IK.U)([A.YAq.>>USAGE_STATISTICS<<],[]).catch(I4.i):(0,I4.O)({header:j.intl.
+  the analytics pipeline config (where events get sent). no consent anywhere in it:
+  web.3a122a9dc6c39305.js @8924946
+  NNECTION_CLOSED:()=>i.AnalyticsActionHandlers.handleConnectionClosed(),FINGERPRINT:()=>i.AnalyticsActionHandlers.handleFingerprint(),>>TRACK<<:e=>i.AnalyticsActionHandlers.>>handleTrack<<(e),SET_ANALYTICS_TOKEN:e=>i.AnalyticsActionHandlers.handleSetAnalyticsToken(e)},>>>>TRACK<<ING_URL<<:c.Rsh.>>TRACK<<,waitFor:[d.default],getFingerprint:d.default.getFingerprint,getSessionId:()=>(0,l.Ht)().then(e=>({sessionId:e?.uuid})),getLaunchSignature:()=>o.launchSignature,scheduleWhenIdle:r.O,sendUnloadRequest:s.L})},384200(e,t,n){"use strict";n.
+  ✓ 23 references, 0 outside settings/enum. the send path never reads it.
+
+## launch_game
+every game you open gets reported. exe path, fingerprint, your servers, your voice channel. activity status off just becomes a field.
+
+  web.3a122a9dc6c39305.js @1810212
+  Enabled,C=r.source;j.default.track(H.HAw.LAUNCH_GAME,{game:_??I,game_id:u??p,verified:A??(null!=n&&(0,MI.PQ)(g,n?.executables)),elevated:t.elevated,is_launcher:t?.isLauncher??!1,game_platform:H.yTV.DESKTOP,detection_method:i,distributor:m,is_overlay_enabled:N,is_overlay_game_enabled:S,is_overlay_game_source:C,fullscreen_type:null!=h?Ms.aI[h]:Ms.aI.UNKNOWN.toString(),hardware_display_count:await em.A?.hardware?.getDisplayCount?.()??null,overlay_method:MO.Ue[a]??(__OVERLAY__?MO.Ue[MO.Ue.Hook]:null),>>activity_status_enabled<<:eO.tz.getSetting(),>>activity_status_shared_guilds<<:s,current_user_status:ij.A.getStatus(),game_detection_enabled:(0,ig.Xr)(t),>>executable_path<<:T,>>voice_channel_id<<:l,voice_channel_type:o,voice_channel_bitrate:d,>>voice_channel_guild_id<<:c,distributor_game_id:t.sku,hidden_by_distributor:t.hidden,game_metadata:(0,MI.EQ)(t,null!=u,E),>>executable_fingerprint<<:f??t.executableFingerprint}),null!=T&&ig.Ay.addExecutableTrackedByAn
+  fields: game, game_id, verified, elevated, is_launcher, game_platform, detection_method, distributor, is_overlay_enabled, is_overlay_game_enabled, is_overlay_game_source, fullscreen_type, hardware_display_count, overlay_method, activity_status_enabled, activity_status_shared_guilds, current_user_status, game_detection_enabled, executable_path, voice_channel_id, voice_channel_type, voice_channel_bitrate, voice_channel_guild_id, distributor_game_id, hidden_by_distributor, game_metadata, executable_fingerprint
+  fires 10s (1e4 ms) after a game is detected:
+  web.3a122a9dc6c39305.js @1809708
+  D=n(760751),Mv=n(232835),Mb=n(543465),MM=n(532294),MP=n(705751);async function MU(e){let{runningGame:t,game:n,detectionMethod:i,overlayStatus:r,overlayMethod:a,sharedGuildIds:s,voiceChannelId:l,voiceChannelType:o,voiceChannelBitrate:d,voiceChannelGuildId:c,reportedGameId:u,reportedGameName:_,detectedGameId:E,verified:A}=e,[h,f]=await Promise.all([(0,ML.E1)(t.pid),ig.Ay.canCollectExecutableFingerprintsForRunningGames()?eB.Ay.getExecutableFingerprintForProcess(t.pid):Promise.resolve(null)]),{gameName:I,gameId:p,exe:T
+  ✓ launch_game carries executable_path, activity_status_enabled, activity_status_shared_guilds, voice_channel_id
+
+## idle
+it checks how long your whole mac has been idle. every 10 seconds. and when you lock or sleep it.
+
+  web.3a122a9dc6c39305.js @9081807
+  tch({type:"AFK",afk:!1})}function C(e){e&&(i=Date.now()),N()}if(!__OVERLAY__){_.isPlatformEmbedded&&d.A?.powerMonitor!=null?(!function e(){function t(t){let n=Date.now()-t;(null==i||n>i)&&(f=Math.max(n,f),i=null),N(),setTimeout(e,>>10*<<u.A.Millis.SECOND)}if(d.A?.powerMonitor?.>>getSystemIdleTimeMs<<!=null){let e=d.A.powerMonitor.>>getSystemIdleTimeMs<<();e instanceof Promise?e.then(t):t(e)}}(),d.A.powerMonitor.on(>>"resume"<<,()=>{T=!1,C(!1)}),d.A.powerMonitor.on(>>"suspend"<<,()=>{T=!0,C(!0),o.default.disconnect()}),d.A.powerMonitor.on(>>"lock-screen"<<,()=>{m=!0,C(!0)}),d.A.powerMonitor.on(>>"unlock-screen"<<,()=>{m=!1,C(!1)})):setInterval(N,30*u.A.Millis.SECOND);let e=a()(()=>{O({})},500);window.addEventListener("mouseup",e),window.addEventListener("wheel",e),window.addEventListener("keypress"
+  core.asar:bundle.js @84654
+  ))return Number(discordUtils.getWaylandSystemIdleTimeMs())}catch(error){console.error("Wayland idle time query failed:",error)}return 1e3*electron.>>powerMonitor<<.>>getSystemIdleTime<<()}),electron.>>powerMonitor<<.on("resume",()=>{sendToAllWindows(POWER_MONITOR_RESUME)}),electron.>>powerMonitor<<.on("suspend",()=>{sendToAllWindows(POWER_MONITOR_SUSPEND)}),electron.>>powerMonitor<<.on("lock-screen",()=>{sendToAllWindows(POWER_MONITOR_LOCK_SCREEN)}),electron.>>powerMonitor<<.on("unlock-screen",()=>{sendToAllWindows(POWER_MONITOR_UNLOCK_SC
+  ✓ system idle poll every 10s + lock/sleep listeners
+
+## super_properties
+every api request says your os, version, cpu arch, language, and whether you run betterdiscord/vencord.
+
+  fast-connect.d9d679519c7143d6.js @940
+  ){case"win32":e="Windows";break;case"darwin":e="Mac OS X";break;case"linux":e="Linux";break;default:e=E}if(i={os:e,browser:"Discord Client",release_channel:o||"unknown",client_version:t,>>os_version<<:n,>>os_arch<<:r,app_arch:_,>>system_locale<<:I,>>has_client_mods<<:D(),>>client_launch_id<<:M},g().name?.toLocaleLowerCase()==="electron"&&(i.browser_user_agent=g().ua||"",i.browser_version=g().version||""),"linux"===E){let e=U.crashReport
+  the client-mod check:
+  sentry.7b3e712a11a53a92.js @1206
+  HANNEL||d.some(e=>window.navigator.appVersion.toLowerCase().indexOf(e)>=0)||null!=(o=window).jQuery||null!=o.$||null!=o.>>BetterDiscord<<||null!=o.BdApi||null!=o.rambox||null!=o.>>Vencord<<||null!=o.>>Vencord<<Native||"Aborted"===(r=e).message||"cancel captcha"===r.message||!u())return null;if(null==e.fingerprint){let r,o,t=(r=e.exception?.values?.at(-1),o=r?.type==="HT
+  ✓ X-Super-Properties includes has_client_mods + system_locale
+
+## heartbeat
+every 15 min: memory, current game, idle, afk, screen locked, sleeping.
+
+  web.3a122a9dc6c39305.js @2797162
+  riv_kb??-1,i.utility?.wss_priv_kb??-1,i.clips?.wss_priv_kb??-1],e.electron_process_memory_private_and_shared=[i.unknown?.wss_kb??-1,i.main?.wss_kb??-1,i.renderer?.wss_kb??-1,i.gpu?.wss_kb??-1,i.crashpad?.wss_kb??-1,i.utility?.wss_kb??-1,i.clips?.wss_kb??-1]),e),...(r={},null!=(a=m.Ay.getCurrentGameForAnalytics())&&(r.client_heartbeat_current_game_id=a.id,r.client_heartbeat_current_game_name=a.name,r.client_heartbeat_current_game_executable=(0,T.Ic)(a.exePath),r.client_heartbeat_current_game_distributor=a.distributor,r.uses_client_mods=(0,p.b)()),r)},...(s=E.A.getIdleSince()??0,{is_idle:E.A.isIdle(),idle_duration_ms:Date.now()-s,is_afk:E.A.isAFK(),is_system_suspended:E.A.getSystemSuspended(),>>is_system_locked<<:E.A.getSystemLocked()})};h.default.track(D.HAw.>>CLIENT_HEARTBEAT<<,_),k=u(),(0,o.p)()}function K(){let e=[];return null!=j&&H&&(V&&e.push(">>foregrounded<<"),B===D.S7L.RTC_CONNECTED&&e.push(">>rtc_connected<<")),{active:e.length>0,ver:31,reasons:e}}function $(){return K().active}function z(){$()?function(){if(null!=w)return;let e=0===k?0:v-(u()-k);I.A.addBreadcrumb({message:`Received Last He
+  ✓ client_heartbeat (runs while focused or in a call)
+
+## beaker
+a second analytics endpoint: /beaker. hourly. even in the background.
+
+  web.3a122a9dc6c39305.js @11757674
+  x=((N={}).>>CLIENT_TELEMETRY<<="client_telemetry",N),ek=((C={}).>>CLIENT_TELEMETRY<<=">>/beaker<<",C),eF=((O={}).AED="aed",O.AFN="afn",O.ALL="all",O.AMD="amd",O.ANG="ang",O.AOA="aoa",O.ARS="ar
+  ✓ client_telemetry → /api/v9/beaker
+
+## sentry
+crash reports go to sentry.io with your email, id and username. no opt-out. mac = 100% of crashes.
+
+  core.asar:bundle.js @225758
+  vent?.tags?.isStaff==="true"?[buildSentryDSN("<key>")]:[defaultDsn]}function buildSentryDSN(dsnKey){return"https://"+dsnKey+"@o64374.>>ingest.sentry.io<</146342"}function getSentryDSN(releaseChannel){let processUtils=__webpack_require__(5468);return processUtils.IS_LINUX?buildSentryDSN("<key>"):processUtils.IS_OSX?buildSentryDSN("<key>"):null!=releaseChannel&&null!=CHANNEL_SENTRY_DSN[releaseChannel]?CHANNEL_SENTRY_DSN[releaseChannel]:DEFAU
+  sample rate: 1 (= every crash) on mac:
+  core.asar:bundle.js @222192
+  buildInfo.version,dist:buildInfo.sentryDist,>>sampleRate<<:(releaseChannel=buildInfo.releaseChannel,(processUtils=__webpack_require__(5468)).IS_LINUX||processUtils.>>IS_OSX?1<<:null!=releaseChannel&&null!=CHANNEL_SENTRY_SAMPLE[releaseChannel]?CHANNEL_SENTRY_SAMPLE[releaseChannel]:.01),skipOpenTelemetrySetup:!0,integrations:defaults=>defaults.filter(i=>"MainProcessSession"!==i.name&&"BrowserSession"!==i.name),maxValueLength:250,beforeSend(event,hint){event.extra=exports.metadata;let minidump=hint?.attachments?.find(attachme
+  the only off switch is an environment variable, not a setting:
+  core.asar:bundle.js @221655
+  entry){var releaseChannel;let processUtils;if(initialized)return void console.warn("Ignoring double initialization of crash reporter.");if("true"===process.env.>>ELECTRON_ENABLE_STACK_DUMPING<<)return void console.warn("Not initializing crash reporter because >>ELECTRON_ENABLE_STACK_DUMPING<< is set.");null!=sentry&&(defaultDsn=getSentryDSN(buildInfo.releaseChannel),sentry.sentry.init({dsn:getSentryDSN(buildInfo.releaseChannel),transport:sentry.getTransport(dsnFromUser),environment:buildInfo.releaseChannel,release:buildInf
+  core.asar:bundle.js @44144
+  orter,finalMetadata);let sentry=crashReporterSetup_1.crashReporterSetup.getGlobalSentry();if(null!=sentry){let user=additionalMetadata.sentry?.user;null!=user&&sentry.>>setUser<<(user);let nativeBuildNumber=additionalMetadata.nativeBuildNumber;null!=nativeBuildNumber&&sentry.setTag("nativeBuildNumber",nativeBuildNumber);let staff=additionalMetadata.staff;null!=staff&&sentry.setTag("isStaff",staff.toString())}return Promise.resolve({metadata:finalMetadata})}),electron_1.default.ipcMain.handle(DiscordIPC_1.IPCEvents.UNHA
+  on your disk: >>~/Library/Application Support/discord/sentry/scope_v3.json has user.id, user.username, user.email (values not shown) + 100 breadcrumbs<<
+  ✓ main-process sentry, sample rate 1 on mac, env-var-only opt-out
+
+## dns_beacon
+on launch it stuffs your system language into a dns name under dc-telemetry.net. no setting.
+
+  app.asar:bundle.js @31272
+  labelsStr}.${this.suffix()}`}}let DNS_ENCODING_VERSION="v1";class >>DnsReporter<<{baseDomain;>>clientLocale<<;reportedChecks=new Set;constructor(baseDomain,>>clientLocale<<){this.baseDomain=baseDomain??">>dc-telemetry.net<<",this.>>clientLocale<<=>>clientLocale<<}encode(sessionNonce,result){var error;let builder=new DnsQueryBuilder(this.baseDomain);return builder.addLabel(>>"idt"<<,sessionNonce,result.timestamp.toString(36)).addLabelIf(void 0!==this.>>clientLocale<<,>>"loc"<<,this.>>clientLocale<<??"unknown").addLabel("chk",result.checkId).addLabel("res",result.success?"ok":"err").addLabelIf(!result.success,"err",void 0!==result.error?(error=result.error,`${void 0!==error.code?`${error.code}-`:""}${error.message}`):"unknown").addLabel("dur",Math.round(Math.min(Math.max(0,result.durationMs),99999)).toString(36)),builder.build()}async report(sessionNonce,result){if(this.reportedChecks.has(result.checkId))return;this.reportedChecks.add(result.checkId);let dnsQuery=this.encode(sessionNonce,result);console.log(`[ConnectivityTester ${sessionNonce}] Sending DNS query:`,dnsQuery);try{await net.fetch(`https://${dnsQuery}`)}catch(err){}}}exports.>>DnsReporter<<=>>DnsReporter<<;class ConnectivityTest
+  app.asar:bundle.js @34645
+  Module",{value:!0}),exports.registerDesktopConnectivityTests=function(session,>>locale<<){connectivityTester.init({reporter:new connectivityTester.>>DnsReporter<<("dc-telemetry.net",>>locale<<)});let urlFilterPatterns=[],urlToTestName=[];for(let[testName,test]of Object.entries(DESKTOP_TESTS))urlFilterPatterns.push(...test.urlFilte
+  ✓ DnsReporter → *.v1.dc-telemetry.net, locale in the hostname
+
+## warp
+inferred: a cloudflare warp installer sits in the native module. admin prompt. nothing calls it that we could find.
+
+  discord_utils.node @592910
+   AuthorizationCopyRights failed:  -ep -c USEDIR=$(/usr/bin/mktemp -d -p /private/tmp -t discord->>warp<<-install); INSTALLER="$USEDIR/>>warp<<.pkg"; [ -d "$USEDIR" ]; /usr/bin/curl -L -o "$INSTALLER" https://1111-releases.>>cloudflareclient.com<</mac/latest &> /dev/null && >>/usr/sbin/installer<< -pkg "$INSTALLER" -target / && echo DISCORD-WARP-INSTALL-SUCCESS || true; /bin/rm "$INSTALLER" || true; /bin/rmdir "$USEDIR" /bin/bash AuthorizationExecuteWithPrivileges failed: 
+  ✓ installWarp + warp.pkg download/install string present (strings only, dormant as far as we can tell)
+
+## sandbox
+the main window runs with sandbox off.
+
+  core.asar:bundle.js @142205
+  esizable:!0,show:isVisible,webPreferences:{enableBlinkFeatures:"EnumerateDevices,AudioOutputDevices",nodeIntegration:!1,>>sandbox:!1<<,preload:path_1.default.join(__dirname,"mainScreenPreload.js"),spellcheck:!0,>>contextIsolation:!0<<,additionalArguments,devTools:ENABLE_DEVTOOLS}};"linux"===process.platform&&(mainWindowOptions.icon=path_1.default
+  ✓ main window: sandbox:false (contextIsolation is on)
+
+summary
+  ✓ consent            23 references, 0 outside settings/enum. the send path never reads it.
+  ✓ launch_game        launch_game carries executable_path, activity_status_enabled, activity_status_shared_guilds, voice_channel_id
+  ✓ idle               system idle poll every 10s + lock/sleep listeners
+  ✓ super_properties   X-Super-Properties includes has_client_mods + system_locale
+  ✓ heartbeat          client_heartbeat (runs while focused or in a call)
+  ✓ beaker             client_telemetry → /api/v9/beaker
+  ✓ sentry             main-process sentry, sample rate 1 on mac, env-var-only opt-out
+  ✓ dns_beacon         DnsReporter → *.v1.dc-telemetry.net, locale in the hostname
+  ✓ warp               installWarp + warp.pkg download/install string present (strings only, dormant as far as we can tell)
+  ✓ sandbox            main window: sandbox:false (contextIsolation is on)
+
+✗ usually means discord shipped a new build and the pattern moved. open an issue with your build number.
