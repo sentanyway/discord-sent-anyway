@@ -1,10 +1,18 @@
 # sent anyway
 
-i turned off "use data to improve discord".
+i turned off every privacy setting in discord.
 
 then i read the code.
 
-everything below is checkable on your own machine in about a minute. you don't have to trust me.
+- the "use data to improve discord" toggle is never checked before sending analytics.
+- every game you open gets reported with its file path, your servers and your voice channel. activity status off or not.
+- your email goes to a third party (sentry.io) with every crash. no setting turns it off.
+- it tracks how long your whole computer has been idle, every 10 seconds.
+- window closed, untouched for 30 minutes: analytics went out every 5 minutes, on the second.
+- your language gets sent in a dns lookup on every launch, outside the api.
+- there's a script inside that installs a vpn on your mac with admin rights.
+
+don't trust me. check your own install. it takes about a minute:
 
 ```
 git clone https://github.com/sentanyway/discord-sent-anyway
@@ -32,112 +40,20 @@ sent anyway.
 node verify.mjs consent
 ```
 
-lists every place the web app mentions `USAGE_STATISTICS`. all of them are the settings screen or the enum that defines it. none are in the code that queues or sends events to `/api/v9/science`. the toggle calls a consent api on the server. that's it.
+the web app mentions `USAGE_STATISTICS` 23 times. every single one is the settings screen or the line that defines it. **zero** are in the code that queues or sends events to `/api/v9/science`.
+
+flipping the toggle sends one request to discord's server saying you revoked consent. then the app keeps sending exactly what it sent before.
 
 ```js
-// settings screen: this is the whole job of the toggle
+// the entire job of the toggle
 onConfirm:()=>(0,IX.U)([],[A.YAq.USAGE_STATISTICS])
 ```
 
 ---
 
-### 2. every game you open
+### 2. in the background
 
-activity status: off.
-
-discord still reports every game it detects. exe path. a file fingerprint. up to 200 of your server ids. your voice channel.
-
-"off" just becomes a field in the report.
-
-sent anyway.
-
-```
-node verify.mjs launch_game
-```
-
-```js
-$.default.track(K.HAw.LAUNCH_GAME,{game:..., elevated:..., hardware_display_count:...,
-  activity_status_enabled:eD.tz.getSetting(),
-  activity_status_shared_guilds:s,
-  executable_path:T,
-  voice_channel_id:l, voice_channel_guild_id:c,
-  executable_fingerprint:f??t.executableFingerprint})
-// scheduled 10 seconds (1e4 ms) after the game is detected
-```
-
----
-
-### 3. crash reports
-
-discord sends crash reports to sentry.io. with your email, user id and username.
-
-on mac it sends every one (sample rate 1).
-
-no setting turns it off. only an environment variable does.
-
-sent anyway.
-
-```
-node verify.mjs sentry
-```
-
-```js
-sampleRate: ... IS_LINUX||processUtils.IS_OSX?1: ... :.01
-if("true"===process.env.ELECTRON_ENABLE_STACK_DUMPING)return void console.warn("Not initializing crash reporter ...")
-let user=additionalMetadata.sentry?.user;null!=user&&sentry.setUser(user)
-```
-
-on my machine `sentry/scope_v3.json` holds `user.id`, `user.username`, `user.email` and about 100 breadcrumbs. check yours: the script prints the key names, not the values.
-
----
-
-### 4. the dns beacon
-
-every launch, discord puts your system language into a dns name.
-
-`idt-<nonce>.loc-<your locale>.chk-webapp.res-ok.dur-0.v1.dc-telemetry.net`
-
-it goes outside the normal api. no setting.
-
-it's probably a connectivity check. it still carries your locale.
-
-sent anyway.
-
-```
-node verify.mjs dns_beacon
-```
-
-```js
-class DnsReporter{baseDomain;clientLocale; ... this.baseDomain=baseDomain??"dc-telemetry.net"
-new connectivityTester.DnsReporter("dc-telemetry.net",locale)
-```
-
----
-
-### 5. idle
-
-discord checks how long your whole computer has been idle. every 10 seconds.
-
-it listens for lock, unlock, sleep and wake.
-
-idle, afk, locked and suspended go out in presence and heartbeats.
-
-sent anyway.
-
-```
-node verify.mjs idle heartbeat
-```
-
-```js
-setTimeout(e,10*u.A.Millis.SECOND)} if(d.A?.powerMonitor?.getSystemIdleTimeMs!=null) ...
-powerMonitor.on("lock-screen",...) powerMonitor.on("suspend",...)
-```
-
----
-
-### 6. in the background
-
-i hid the window and didn't touch it for 30 minutes.
+i closed the window. didn't touch it for 30 minutes.
 
 it posted analytics every 5 minutes. on the second.
 
@@ -155,13 +71,128 @@ sent anyway.
 20:30:09  POST /api/v9/science
 ```
 
-full redacted timeline: [`examples/idle-30min-timeline.md`](examples/idle-30min-timeline.md). do it yourself: [`netlog/HOWTO.md`](netlog/HOWTO.md).
+10 analytics posts and 1 telemetry batch in 30 minutes, with nobody using it. full redacted timeline: [`examples/idle-30min-timeline.md`](examples/idle-30min-timeline.md). capture your own: [`netlog/HOWTO.md`](netlog/HOWTO.md).
 
 ---
 
-### 7. every request
+### 3. every game you open
+
+activity status: off.
+
+discord still reports every game it detects. the full file path of the exe. a fingerprint of the file. whether it runs as admin. up to 200 of your server ids. the voice channel you're in, and its server.
+
+"off" just becomes a field in the report.
+
+sent anyway.
+
+```
+node verify.mjs launch_game
+```
+
+```js
+$.default.track(K.HAw.LAUNCH_GAME,{game:..., elevated:..., hardware_display_count:...,
+  activity_status_enabled:eD.tz.getSetting(),   // your "off", sent along with everything else
+  activity_status_shared_guilds:s,
+  executable_path:T,
+  voice_channel_id:l, voice_channel_guild_id:c,
+  executable_fingerprint:f??t.executableFingerprint})
+// fires 10 seconds (1e4 ms) after the game is detected
+```
+
+it's not just games. a separate event, `launch_non_game_application`, does the same for other apps it recognises. my own logs show 123 game changes and 123 non-game app changes picked up.
+
+---
+
+### 4. your email, to sentry.io
+
+when discord crashes, the report goes to sentry.io, a third-party company. it carries your email, user id and username.
+
+on mac (and linux) it sends 100% of crashes.
+
+there is no setting. the only way to turn it off is an environment variable.
+
+sent anyway.
+
+```
+node verify.mjs sentry
+```
+
+```js
+sampleRate: ... IS_LINUX||processUtils.IS_OSX?1: ... :.01      // mac + linux: 1 = every crash
+let user=additionalMetadata.sentry?.user;null!=user&&sentry.setUser(user)
+if("true"===process.env.ELECTRON_ENABLE_STACK_DUMPING)return void console.warn("Not initializing crash reporter ...")
+```
+
+and it keeps a copy. on my machine `sentry/scope_v3.json` holds `user.id`, `user.username`, `user.email`, plus about 100 breadcrumbs of what i was doing. the script shows you which keys are in yours.
+
+---
+
+### 5. your whole computer
+
+discord checks how long your entire computer has been idle. not discord. your computer. every 10 seconds.
+
+it listens for you locking the screen, unlocking it, sleeping and waking.
+
+idle, afk, locked and asleep all go out in presence and heartbeats.
+
+sent anyway.
+
+```
+node verify.mjs idle heartbeat
+```
+
+```js
+setTimeout(e,10*u.A.Millis.SECOND)} if(d.A?.powerMonitor?.getSystemIdleTimeMs!=null) ...
+powerMonitor.on("lock-screen",...)  powerMonitor.on("unlock-screen",...)  powerMonitor.on("suspend",...)
+```
+
+---
+
+### 6. the dns beacon
+
+every launch, discord builds a hostname out of your system language and looks it up.
+
+`idt-<nonce>.loc-<your language>.chk-webapp.res-ok.dur-0.v1.dc-telemetry.net`
+
+it doesn't go through the api. it doesn't go through analytics. no setting touches it. i saw it go out live, about 20 seconds after launch.
+
+sent anyway.
+
+```
+node verify.mjs dns_beacon
+```
+
+```js
+class DnsReporter{baseDomain;clientLocale; ... this.baseDomain=baseDomain??"dc-telemetry.net"
+new connectivityTester.DnsReporter("dc-telemetry.net",locale)
+```
+
+discord calls it a connectivity test. it still carries your language, every launch, through a side channel.
+
+---
+
+### 7. a vpn installer
+
+inside `discord_utils.node` there's a shell script. it downloads cloudflare's warp vpn and installs it system-wide, behind an admin password prompt.
+
+don't know: what triggers it. i found nothing in the current app that calls it.
+
+```
+node verify.mjs warp
+```
+
+```sh
+/usr/bin/curl -L -o "$INSTALLER" https://1111-releases.cloudflareclient.com/mac/latest
+/usr/sbin/installer -pkg "$INSTALLER" -target /
+```
+
+---
+
+### 8. every request
 
 every api call carries a header with your os, os version, cpu arch, system language, and whether you run betterdiscord or vencord.
+
+every request. not just analytics.
 
 sent anyway.
 
@@ -175,9 +206,9 @@ a={os:e, ..., os_version:i, os_arch:r, app_arch:s, system_locale:o, has_client_m
 
 ---
 
-### 8. the second endpoint
+### 9. a second pipe
 
-there's a second analytics endpoint: `/api/v9/beaker`. about once an hour. in the background too.
+there's a second analytics endpoint: `/api/v9/beaker`. about once an hour. window open or closed. caught live at 20:18:40.
 
 sent anyway.
 
@@ -187,26 +218,20 @@ node verify.mjs beaker
 
 ---
 
-### smaller stuff
+### 10. on your disk
 
-- **cloudflare warp installer** (inferred). `discord_utils.node` contains a script that downloads `warp.pkg` from cloudflare and installs it with an admin prompt. i found nothing that calls it. strings only, no disassembly. `node verify.mjs warp`
-- **sandbox off.** the main window runs with `sandbox:false`. context isolation is on. `node verify.mjs sandbox`
-- **your messages on disk.** discord's http cache (~800 MB on my machine) holds api responses: channel messages, profiles, your private notes. i only looked at the url keys.
+discord's cache on my machine was ~800 MB. in it: channel messages, user profiles, and my private notes on other users. not encrypted. cookie encryption is switched off in the app build.
+
+and the main window runs with the chromium sandbox off (`sandbox:false`). `node verify.mjs sandbox`
 
 ---
 
 ### what i don't know
 
-- what discord's servers do with events after you turn the setting off. maybe they drop them. the client can't show that.
-- what's inside each `/science` batch in the background. that needs a tls-intercepting proxy. not done yet.
-- whether `installWarp` ever runs, and what triggers it.
+- what discord's servers do with events after you turn the setting off. the client can't show that.
+- what's inside each background `/science` post. that needs a tls-intercepting proxy. coming.
+- what triggers the vpn installer.
 - the game-scan interval, and what `executable_fingerprint` is made of. that's native code.
-
-### what this isn't
-
-not saying discord sells your data. not saying it's malware. some of this is in their privacy policy.
-
-i'm saying the toggle doesn't do what it sounds like it does, on the client.
 
 ---
 
