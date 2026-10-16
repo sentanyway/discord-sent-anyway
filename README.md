@@ -18,13 +18,20 @@ check your own install. one minute. read-only.
 
 activity status: off.
 
-discord reports every game you open anyway.
+discord reports every game you open anyway. and the other apps it recognises.
 
-the file path on your computer. a fingerprint of the file. your server ids. the voice channel you're in.
+the file path on your computer. your server ids. the voice channel you're in.
+
+and it fingerprints the program. native code you can't read. always on. there's no setting for it at all.
 
 your "off" gets sent along with it.
 
 sent anyway.
+
+```js
+canCollectExecutableFingerprintsForRunningGames(){return Y}
+Y=!__OVERLAY__&&((0,x.isDesktop)()||g.O)   // = always, on desktop
+```
 
 ```js
 $.default.track(K.HAw.LAUNCH_GAME,{
