@@ -8,7 +8,9 @@ then i read the code.
 - every game you open gets reported with its file path, your servers and your voice channel. activity status off or not.
 - your email goes to a third party (sentry.io) with every crash. no setting turns it off.
 - it tracks how long your whole computer has been idle, every 10 seconds.
-- window closed, untouched for 30 minutes: analytics went out every 5 minutes, on the second.
+- window closed, untouched for 30 minutes: analytics went out every 5 minutes, on the second. i captured what's inside: cpu, memory, uptime, and your accessibility settings.
+- on launch it sent the user ids of everyone in my dm list (74 of them) and the names of 5 games on my computer.
+- every single event carries your accessibility settings. screen reader, reduced motion, high contrast, bold text, grayscale.
 - your language gets sent in a dns lookup on every launch, outside the api.
 - there's a script inside that installs a vpn on your mac with admin rights.
 
@@ -57,7 +59,7 @@ i closed the window. didn't touch it for 30 minutes.
 
 it posted analytics every 5 minutes. on the second.
 
-don't know: what was in them. the capture has urls and times, not bodies.
+i captured what was inside. it's `desktop_perf_heartbeat`: cpu usage, memory for every discord process, cpu core count, how long the app has been open, whether the window is focused, and your accessibility settings.
 
 sent anyway.
 
@@ -71,11 +73,70 @@ sent anyway.
 20:30:09  POST /api/v9/science
 ```
 
-10 analytics posts and 1 telemetry batch in 30 minutes, with nobody using it. full redacted timeline: [`examples/idle-30min-timeline.md`](examples/idle-30min-timeline.md). capture your own: [`netlog/HOWTO.md`](netlog/HOWTO.md).
+10 analytics posts and 1 telemetry batch in 30 minutes, with nobody using it. full redacted timeline: [`examples/idle-30min-timeline.md`](examples/idle-30min-timeline.md).
+
+```json
+// 15:21:39, window hidden for 5 minutes
+{ "type": "desktop_perf_heartbeat",
+  "client_performance_cpu": 0.12, "client_performance_memory": 629776, "cpu_core_count": 10,
+  "electron_process_memory_private_and_shared": [-1, 154048, 257344, 74256, -1, 144128, -1],
+  "uptime_app": 307, "client_app_state": "unfocused",
+  "accessibility_features": 524544, "rendered_locale": "en-US", ... }
+```
+
+every event and every field, redacted: [`examples/what-it-sent.md`](examples/what-it-sent.md). capture your own: [`netlog/HOWTO.md`](netlog/HOWTO.md).
 
 ---
 
-### 3. every game you open
+### 3. what it sends the second you open it
+
+i opened discord. didn't click anything. 15 seconds later i hid it.
+
+it had already sent 34 events. in them:
+
+- `dm_list_viewed`: the user ids of everyone visible in my dm list. 74 people. none of them agreed to anything.
+- `game_name_match_fallback`: the names of 5 games it matched on my computer. one event per game.
+- `friends_list_viewed`: how many friends i have, how many are online, idle, on do not disturb, pending requests.
+- `ready_payload_received`: how many servers i'm in.
+- `desktop_tti_v2`: how long my computer has been on (26 days), my connection speed and latency, the size of discord's cache on my disk.
+- `notification_permission_status`: whether i allowed notifications in macos.
+- `client_heartbeat`: idle, afk, screen locked, asleep.
+
+don't know: where the 5 game names came from. running, installed, or launched before.
+
+sent anyway.
+
+```js
+// dm_list_viewed: who is in your dm list
+l=s.map(e=>null!=n[e]?n[e].getRecipientId():null) ...
+m.Ay.trackWithMetadata(X.HAw.DM_LIST_VIEWED,{...d,...(0,S.F)(),visible_user_ids:l.filter(e=>null!=e),changelog_dm_visible:o})
+```
+
+---
+
+### 4. your accessibility settings, on every event
+
+every event discord sends gets the same fields bolted on. one is `accessibility_features`: a number where each bit is one of your settings.
+
+screen reader. reduced motion. reduced transparency. high contrast. bold text. grayscale. invert colors. dark or light mode. font size. zoom. saturation. contrast.
+
+mine came out as 524544: dark mode, plus forced colors from my settings.
+
+sent anyway.
+
+```js
+// added to every event by the tracker
+t.client_performance_cpu=A.A.getCurrentCPUUsagePercent(),t.client_performance_memory=A.A.getCurrentMemoryUsageKB(),
+t.cpu_core_count=A.A.getCPUCoreCount(),t.accessibility_features=y(),t.rendered_locale=T.intl.currentLocale, ...
+
+// what the bits mean
+NONE=0, SCREENREADER=1, REDUCED_MOTION=2, REDUCED_TRANSPARENCY=4, HIGH_CONTRAST=8, BOLD_TEXT=16,
+GRAYSCALE=32, INVERT_COLORS=64, PREFERS_COLOR_SCHEME_LIGHT=128, PREFERS_COLOR_SCHEME_DARK=256, ...
+```
+
+---
+
+### 5. every game you open
 
 activity status: off.
 
@@ -103,7 +164,7 @@ it's not just games. a separate event, `launch_non_game_application`, does the s
 
 ---
 
-### 4. your email, to sentry.io
+### 6. your email, to sentry.io
 
 when discord crashes, the report goes to sentry.io, a third-party company. it carries your email, user id and username.
 
@@ -127,7 +188,7 @@ and it keeps a copy. on my machine `sentry/scope_v3.json` holds `user.id`, `user
 
 ---
 
-### 5. your whole computer
+### 7. your whole computer
 
 discord checks how long your entire computer has been idle. not discord. your computer. every 10 seconds.
 
@@ -148,7 +209,7 @@ powerMonitor.on("lock-screen",...)  powerMonitor.on("unlock-screen",...)  powerM
 
 ---
 
-### 6. the dns beacon
+### 8. the dns beacon
 
 every launch, discord builds a hostname out of your system language and looks it up.
 
@@ -171,7 +232,7 @@ discord calls it a connectivity test. it still carries your language, every laun
 
 ---
 
-### 7. a vpn installer
+### 9. a vpn installer
 
 inside `discord_utils.node` there's a shell script. it downloads cloudflare's warp vpn and installs it system-wide, behind an admin password prompt.
 
@@ -188,9 +249,9 @@ node verify.mjs warp
 
 ---
 
-### 8. every request
+### 10. every request
 
-every api call carries a header with your os, os version, cpu arch, system language, and whether you run betterdiscord or vencord.
+every api call carries a header with your os, os version, cpu arch, system language, whether you run betterdiscord or vencord, and whether discord's window is focused right now.
 
 every request. not just analytics.
 
@@ -204,9 +265,11 @@ node verify.mjs super_properties
 a={os:e, ..., os_version:i, os_arch:r, app_arch:s, system_locale:o, has_client_mods:(0,et.b)(), client_launch_id:ea.C}
 ```
 
+decoded from a real request: `"system_locale": "en-US", "has_client_mods": false, "client_app_state": "unfocused"`.
+
 ---
 
-### 9. a second pipe
+### 11. a second pipe
 
 there's a second analytics endpoint: `/api/v9/beaker`. about once an hour. window open or closed. caught live at 20:18:40.
 
@@ -218,7 +281,7 @@ node verify.mjs beaker
 
 ---
 
-### 10. on your disk
+### 12. on your disk
 
 discord's cache on my machine was ~800 MB. in it: channel messages, user profiles, and my private notes on other users. not encrypted. cookie encryption is switched off in the app build.
 
@@ -229,7 +292,7 @@ and the main window runs with the chromium sandbox off (`sandbox:false`). `node 
 ### what i don't know
 
 - what discord's servers do with events after you turn the setting off. the client can't show that.
-- what's inside each background `/science` post. that needs a tls-intercepting proxy. coming.
+- where the 5 game names at launch came from.
 - what triggers the vpn installer.
 - the game-scan interval, and what `executable_fingerprint` is made of. that's native code.
 
@@ -238,7 +301,7 @@ and the main window runs with the chromium sandbox off (`sandbox:false`). `node 
 ### if you post your own output
 
 - `verify.mjs` output has no personal info. still read it first.
-- never post a raw net log. it has your ids in the urls. post `summarize.mjs` output only.
+- never post a raw net log or a raw `.har`. they have your ids in them. post `summarize.mjs` / `bodies.mjs` output only.
 - never post anything from `Local Storage`, `Cookies`, or `sentry/scope_v3.json` values. your token and email live there.
 
 ### tested on
